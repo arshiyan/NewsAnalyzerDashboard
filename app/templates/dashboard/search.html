@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}جستجو در اخبار - داشبورد تحلیل اخبار{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-search me-2"></i>
+                جستجو در اخبار
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('dashboard.search') }}">
+                    <div class="row">
+                        <div class="col-md-10">
+                            <input type="text" class="form-control form-control-lg" 
+                                   name="q" 
+                                   value="{{ query }}" 
+                                   placeholder="عبارت مورد نظر خود را وارد کنید..."
+                                   autofocus>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-search me-1"></i>
+                                جستجو
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if query %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list me-2"></i>
+                نتایج جستجو برای: "{{ query }}"
+                {% if results %}
+                    <span class="badge bg-primary ms-2">{{ "{:,}".format(results.total).replace(',', '،') }} نتیجه</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if results and results.items %}
+                    {% for item in results.items %}
+                    <div class="news-item {{ 'duplicate' if item.is_duplicate }}">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">
+                                    <a href="{{ item.url }}" target="_blank" class="text-decoration-none">
+                                        {{ item.title }}
+                                    </a>
+                                    {% if item.is_duplicate %}
+                                        <span class="badge bg-danger ms-2">تکراری</span>
+                                    {% endif %}
+                                </h6>
+                                
+                                {% if item.full_text %}
+                                <p class="text-muted mb-2">
+                                    {{ item.full_text[:200] }}{% if item.full_text|length > 200 %}...{% endif %}
+                                </p>
+                                {% endif %}
+                                
+                                <div class="d-flex align-items-center">
+                                    <span class="agency-badge">{{ item.agency.name if item.agency else 'نامشخص' }}</span>
+                                    
+                                    <small class="text-muted ms-3">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {% if item.publication_timestamp %}
+                                            {{ item.publication_timestamp.strftime('%Y/%m/%d %H:%M') }}
+                                        {% else %}
+                                            نامشخص
+                                        {% endif %}
+                                    </small>
+                                    
+                                    <small class="text-muted ms-3">
+                                        <i class="fas fa-download me-1"></i>
+                                        {{ item.crawler_timestamp.strftime('%Y/%m/%d %H:%M') }}
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 text-end">
+                                <!-- Analysis Results -->
+                                {% set sentiment_result = item.analysis_results|selectattr('analysis_type', 'equalto', 'sentiment')|first %}
+                                {% if sentiment_result %}
+                                    {% set sentiment_data = sentiment_result.value|from_json %}
+                                    <div class="mb-2">
+                                        {% if sentiment_data.label == 'positive' %}
+                                            <i class="fas fa-smile sentiment-positive fa-lg" title="احساسات مثبت"></i>
+                                        {% elif sentiment_data.label == 'negative' %}
+                                            <i class="fas fa-frown sentiment-negative fa-lg" title="احساسات منفی"></i>
+                                        {% else %}
+                                            <i class="fas fa-meh sentiment-neutral fa-lg" title="احساسات خنثی"></i>
+                                        {% endif %}
+                                        <small class="d-block text-muted">
+                                            امتیاز: {{ "%.2f"|format(sentiment_data.score) }}
+                                        </small>
+                                    </div>
+                                {% endif %}
+                                
+                                {% set speed_result = item.analysis_results|selectattr('analysis_type', 'equalto', 'speed_to_publish')|first %}
+                                {% if speed_result %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-clock text-info" title="سرعت انتشار"></i>
+                                        <small class="d-block text-muted">
+                                            {{ "%.0f"|format(speed_result.value|float) }} دقیقه
+                                        </small>
+                                    </div>
+                                {% endif %}
+                                
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        data-item-id="{{ item.id }}">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    جزئیات
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Pagination -->
+                    {% if results.pages > 1 %}
+                    <nav aria-label="صفحه‌بندی نتایج جستجو" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if results.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('dashboard.search', q=query, page=results.prev_num) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in results.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != results.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('dashboard.search', q=query, page=page_num) }}">
+                                                {{ "{:,}".format(page_num).replace(',', '،') }}
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ "{:,}".format(page_num).replace(',', '،') }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if results.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('dashboard.search', q=query, page=results.next_num) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                {% elif results %}
+                    <!-- No Results -->
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">نتیجه‌ای یافت نشد</h5>
+                        <p class="text-muted">برای عبارت "{{ query }}" هیچ خبری پیدا نشد.</p>
+                        <div class="mt-4">
+                            <h6>پیشنهادات:</h6>
+                            <ul class="list-unstyled text-muted">
+                                <li><i class="fas fa-check me-2"></i>کلمات کلیدی مختلفی امتحان کنید</li>
+                                <li><i class="fas fa-check me-2"></i>املای کلمات را بررسی کنید</li>
+                                <li><i class="fas fa-check me-2"></i>عبارت کوتاه‌تری استفاده کنید</li>
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Search Tips -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-lightbulb me-2"></i>
+                راهنمای جستجو
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-search me-2 text-primary"></i>نحوه جستجو:</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                جستجو در عنوان و متن اخبار
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                پشتیبانی از زبان فارسی
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                جستجوی عبارات چندکلمه‌ای
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-filter me-2 text-info"></i>نمایش اطلاعات:</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-building text-primary me-2"></i>
+                                نام خبرگزاری
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-calendar text-warning me-2"></i>
+                                تاریخ انتشار
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-smile text-success me-2"></i>
+                                تحلیل احساسات
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-clock text-info me-2"></i>
+                                سرعت انتشار
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Item Details Modal -->
+<div class="modal fade" id="itemDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">جزئیات خبر</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="itemDetailsContent">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p>در حال بارگذاری...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showItemDetails(itemId) {
+    const modal = new bootstrap.Modal(document.getElementById('itemDetailsModal'));
+    const content = document.getElementById('itemDetailsContent');
+    
+    // Show loading
+    content.innerHTML = `
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>در حال بارگذاری...</p>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Find the item in the current page (simple approach)
+    // In a real application, you might want to make an API call
+    const newsItems = document.querySelectorAll('.news-item');
+    let itemData = null;
+    
+    // For now, we'll show a placeholder
+    setTimeout(() => {
+        content.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                جزئیات کامل خبر با شناسه ${itemId}
+            </div>
+            <p>این قسمت می‌تواند شامل اطلاعات تکمیلی مانند:</p>
+            <ul>
+                <li>متن کامل خبر</li>
+                <li>تاریخچه تغییرات</li>
+                <li>اخبار مرتبط</li>
+                <li>نمودار تحلیل احساسات</li>
+                <li>مقایسه با سایر خبرگزاری‌ها</li>
+            </ul>
+        `;
+    }, 500);
+}
+
+// Auto-focus search input
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="q"]');
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
+    
+    // Add click event listeners for detail buttons
+    document.querySelectorAll('button[data-item-id]').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            showItemDetails(itemId);
+        });
+    });
+});
+
+// Handle search form submission
+document.querySelector('form').addEventListener('submit', function(e) {
+    const searchInput = document.querySelector('input[name="q"]');
+    if (!searchInput.value.trim()) {
+        e.preventDefault();
+        searchInput.focus();
+        
+        // Show a brief message
+        const feedback = document.createElement('div');
+        feedback.className = 'alert alert-warning mt-2';
+        feedback.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>لطفاً عبارت مورد نظر را وارد کنید.';
+        
+        const existingFeedback = document.querySelector('.alert-warning');
+        if (existingFeedback) {
+            existingFeedback.remove();
+        }
+        
+        searchInput.parentNode.appendChild(feedback);
+        
+        setTimeout(() => {
+            feedback.remove();
+        }, 3000);
+    }
+});
+</script>
+{% endblock %}

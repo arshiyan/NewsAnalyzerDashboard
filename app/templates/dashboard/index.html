@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد اصلی - تحلیل اخبار{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card primary">
+            <div class="stat-number" id="total-news">{{ "{:,}".format(stats.total_news).replace(',', '،') }}</div>
+            <div class="stat-label">
+                <i class="fas fa-newspaper me-1"></i>
+                کل اخبار
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card success">
+            <div class="stat-number" id="today-news">{{ "{:,}".format(stats.today_news).replace(',', '،') }}</div>
+            <div class="stat-label">
+                <i class="fas fa-calendar-day me-1"></i>
+                اخبار امروز
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card warning">
+            <div class="stat-number" id="total-groups">{{ "{:,}".format(stats.total_groups).replace(',', '،') }}</div>
+            <div class="stat-label">
+                <i class="fas fa-layer-group me-1"></i>
+                گروه‌های خبری
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card info">
+            <div class="stat-number" id="active-agencies">{{ "{:,}".format(stats.active_agencies).replace(',', '،') }}</div>
+            <div class="stat-label">
+                <i class="fas fa-building me-1"></i>
+                خبرگزاری‌های فعال
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Growth Rate -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-line me-2"></i>
+                نرخ رشد اخبار
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4>
+                            {% if stats.growth_rate > 0 %}
+                                <span class="text-success">
+                                    <i class="fas fa-arrow-up"></i>
+                                    +{{ "%.1f"|format(stats.growth_rate) }}%
+                                </span>
+                            {% elif stats.growth_rate < 0 %}
+                                <span class="text-danger">
+                                    <i class="fas fa-arrow-down"></i>
+                                    {{ "%.1f"|format(stats.growth_rate) }}%
+                                </span>
+                            {% else %}
+                                <span class="text-muted">
+                                    <i class="fas fa-minus"></i>
+                                    ۰%
+                                </span>
+                            {% endif %}
+                        </h4>
+                        <p class="text-muted">نسبت به دیروز</p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <strong>{{ "{:,}".format(stats.yesterday_news).replace(',', '،') }}</strong>
+                                <br>
+                                <small class="text-muted">دیروز</small>
+                            </div>
+                            <div class="col-6">
+                                <strong>{{ "{:,}".format(stats.today_news).replace(',', '،') }}</strong>
+                                <br>
+                                <small class="text-muted">امروز</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <!-- Timeline Chart -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-area me-2"></i>
+                جدول زمانی اخبار (۲۴ ساعت گذشته)
+            </div>
+            <div class="card-body">
+                <canvas id="timelineChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sentiment Analysis Chart -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-smile me-2"></i>
+                تحلیل احساسات
+            </div>
+            <div class="card-body">
+                <canvas id="sentimentChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent News Groups -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-layer-group me-2"></i>
+                آخرین گروه‌های خبری
+            </div>
+            <div class="card-body">
+                {% if recent_groups %}
+                    {% for group in recent_groups %}
+                    <div class="news-item" data-group-id="{{ group.id }}" style="cursor: pointer;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ group.main_title }}</h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ group.creation_timestamp.strftime('%Y/%m/%d %H:%M') }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">{{ group.item_count }} خبر</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>هیچ گروه خبری یافت نشد</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Agency Statistics -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-building me-2"></i>
+                آمار خبرگزاری‌ها
+            </div>
+            <div class="card-body">
+                {% if agency_stats %}
+                    {% for agency in agency_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong>{{ agency.name }}</strong>
+                            <br>
+                            <small class="text-muted">امروز: {{ "{:,}".format(agency.today_news).replace(',', '،') }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary">{{ "{:,}".format(agency.total_news).replace(',', '،') }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-building fa-2x mb-2"></i>
+                        <p>هیچ خبرگزاری یافت نشد</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Group Details Modal -->
+<div class="modal fade" id="groupDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">جزئیات گروه خبری</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="groupDetailsContent">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p>در حال بارگذاری...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Timeline Chart
+let timelineChart;
+let sentimentChart;
+
+function initializeCharts() {
+    // Initialize Timeline Chart
+    const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+    timelineChart = new Chart(timelineCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: []
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('fa-IR');
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+    
+    // Initialize Sentiment Chart
+    const sentimentCtx = document.getElementById('sentimentChart').getContext('2d');
+    sentimentChart = new Chart(sentimentCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['مثبت', 'منفی', 'خنثی'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: [
+                    '#28a745',
+                    '#dc3545',
+                    '#6c757d'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Load chart data
+    loadTimelineData();
+    loadSentimentData();
+}
+
+function loadTimelineData() {
+    fetch('/api/timeline')
+        .then(response => response.json())
+        .then(data => {
+            updateTimelineChart(data);
+        })
+        .catch(error => {
+            console.error('Error loading timeline data:', error);
+        });
+}
+
+function loadSentimentData() {
+    fetch('/api/sentiment-analysis')
+        .then(response => response.json())
+        .then(data => {
+            updateSentimentChart(data);
+        })
+        .catch(error => {
+            console.error('Error loading sentiment data:', error);
+        });
+}
+
+function updateTimelineChart(data) {
+    const hours = Object.keys(data).sort();
+    const agencies = new Set();
+    
+    // Collect all agencies
+    hours.forEach(hour => {
+        Object.keys(data[hour]).forEach(agency => {
+            agencies.add(agency);
+        });
+    });
+    
+    // Prepare datasets
+    const datasets = Array.from(agencies).map((agency, index) => {
+        const colors = ['#667eea', '#f093fb', '#56ab2f', '#f7971e', '#2196F3'];
+        return {
+            label: agency,
+            data: hours.map(hour => data[hour][agency] || 0),
+            borderColor: colors[index % colors.length],
+            backgroundColor: colors[index % colors.length] + '20',
+            tension: 0.4
+        };
+    });
+    
+    // Format hour labels
+    const labels = hours.map(hour => {
+        const date = new Date(hour);
+        return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+    });
+    
+    timelineChart.data.labels = labels;
+    timelineChart.data.datasets = datasets;
+    timelineChart.update();
+}
+
+function updateSentimentChart(data) {
+    const values = [data.positive || 0, data.negative || 0, data.neutral || 0];
+    sentimentChart.data.datasets[0].data = values;
+    sentimentChart.update();
+}
+
+function loadGroupDetails(groupId) {
+    const modal = new bootstrap.Modal(document.getElementById('groupDetailsModal'));
+    const content = document.getElementById('groupDetailsContent');
+    
+    // Show loading
+    content.innerHTML = `
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>در حال بارگذاری...</p>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Load group details
+    fetch(`/api/group/${groupId}`)
+        .then(response => response.json())
+        .then(data => {
+            displayGroupDetails(data);
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="error">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    خطا در بارگذاری اطلاعات: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function displayGroupDetails(data) {
+    const content = document.getElementById('groupDetailsContent');
+    
+    let html = `
+        <div class="mb-3">
+            <h5>${data.group.main_title}</h5>
+            <small class="text-muted">
+                <i class="fas fa-clock me-1"></i>
+                ${formatPersianDate(data.group.creation_timestamp)}
+            </small>
+        </div>
+        
+        <div class="row">
+    `;
+    
+    data.items.forEach(item => {
+        const sentimentIcon = item.analysis.sentiment ? 
+            (item.analysis.sentiment.label === 'positive' ? 'fa-smile text-success' :
+             item.analysis.sentiment.label === 'negative' ? 'fa-frown text-danger' :
+             'fa-meh text-muted') : 'fa-question text-muted';
+        
+        html += `
+            <div class="col-12 mb-3">
+                <div class="news-item ${item.is_duplicate ? 'duplicate' : ''}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                <a href="${item.url}" target="_blank" class="text-decoration-none">
+                                    ${item.title}
+                                </a>
+                            </h6>
+                            <div class="mb-2">
+                                <span class="agency-badge">${item.agency_name}</span>
+                                <span class="similarity-score ms-2">
+                                    شباهت: ${(item.similarity_score * 100).toFixed(1)}%
+                                </span>
+                                ${item.is_duplicate ? '<span class="badge bg-danger ms-2">تکراری</span>' : ''}
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                ${formatPersianDate(item.publication_timestamp)}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <i class="fas ${sentimentIcon} fa-lg"></i>
+                            ${item.analysis.speed_to_publish ? 
+                                `<br><small class="text-muted">${Math.round(item.analysis.speed_to_publish)} دقیقه</small>` : 
+                                ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    
+    content.innerHTML = html;
+}
+
+// Initialize charts when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    
+    // Add click event listeners for news items
+    document.querySelectorAll('.news-item[data-group-id]').forEach(item => {
+        item.addEventListener('click', function() {
+            const groupId = this.getAttribute('data-group-id');
+            loadGroupDetails(groupId);
+        });
+    });
+    
+    // Refresh charts every 5 minutes
+    setInterval(() => {
+        loadTimelineData();
+        loadSentimentData();
+    }, 300000);
+});
+</script>
+{% endblock %}

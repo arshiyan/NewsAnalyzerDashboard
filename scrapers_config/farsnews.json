@@ -1,0 +1,104 @@
+{
+  "name": "Fars News Agency",
+  "base_url": "https://www.farsnews.ir",
+  "news_list_url": "https://www.farsnews.ir/news",
+  "selectors": {
+    "news_list": {
+      "container": "div.news-list",
+      "item": "div.news-item",
+      "title": "h3 a",
+      "link": "h3 a",
+      "summary": "p.summary",
+      "date": "span.date",
+      "image": "img"
+    },
+    "news_detail": {
+      "title": "h1.news-title",
+      "content": "div.news-body",
+      "date": "span.news-date",
+      "tags": "div.tags a",
+      "category": "nav.breadcrumb a:last-child"
+    }
+  },
+  "pagination": {
+    "type": "url_parameter",
+    "parameter": "page",
+    "max_pages": 10
+  },
+  "date_format": "%Y/%m/%d %H:%M",
+  "encoding": "utf-8",
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "fa,en-US;q=0.7,en;q=0.3",
+    "Accept-Encoding": "gzip, deflate",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1"
+  },
+  "request_delay": 2,
+  "timeout": 30,
+  "retry_attempts": 3,
+  "crawl_settings": {
+    "max_news_per_run": 50,
+    "skip_duplicates": true,
+    "extract_full_text": true,
+    "download_images": false
+  },
+  "url_patterns": {
+    "news_detail": "https://www.farsnews.ir/news/\\d+/.*",
+    "exclude": [
+      ".*\\/tag\\/.*",
+      ".*\\/category\\/.*",
+      ".*\\/archive\\/.*"
+    ]
+  },
+  "content_filters": {
+    "remove_elements": [
+      "script",
+      "style",
+      "nav",
+      "footer",
+      "aside",
+      ".advertisement",
+      ".ads",
+      ".social-share"
+    ],
+    "clean_text": true,
+    "min_content_length": 100
+  },
+  "persian_date_patterns": [
+    "\\d{4}/\\d{1,2}/\\d{1,2}\\s+\\d{1,2}:\\d{2}",
+    "\\d{1,2}\\s+(فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|آذر|دی|بهمن|اسفند)\\s+\\d{4}",
+    "(امروز|دیروز|پریروز)\\s+\\d{1,2}:\\d{2}"
+  ],
+  "category_mapping": {
+    "سیاسی": "politics",
+    "اقتصادی": "economy",
+    "اجتماعی": "social",
+    "فرهنگی": "culture",
+    "ورزشی": "sports",
+    "بین‌الملل": "international",
+    "علمی": "science",
+    "فناوری": "technology"
+  },
+  "quality_checks": {
+    "min_title_length": 10,
+    "max_title_length": 200,
+    "min_content_length": 100,
+    "required_fields": ["title", "url"],
+    "validate_url": true,
+    "check_persian_content": true
+  },
+  "error_handling": {
+    "on_request_error": "skip",
+    "on_parse_error": "log_and_continue",
+    "on_validation_error": "skip",
+    "max_consecutive_errors": 5
+  },
+  "monitoring": {
+    "log_level": "INFO",
+    "track_performance": true,
+    "alert_on_errors": true,
+    "success_rate_threshold": 0.8
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "name": "Mehr News Agency",
+  "base_url": "https://www.mehrnews.com",
+  "news_list_url": "https://www.mehrnews.com/news",
+  "selectors": {
+    "news_list": {
+      "container": "div.news-container",
+      "item": "div.news-box",
+      "title": "h2 a, h3 a",
+      "link": "h2 a, h3 a",
+      "summary": "p.lead, div.summary",
+      "date": "span.time, div.date",
+      "image": "img.news-img"
+    },
+    "news_detail": {
+      "title": "h1.title, h1.news-title",
+      "content": "div.item-text, div.news-content",
+      "date": "span.item-date, div.news-date",
+      "tags": "div.tags a, ul.tags li a",
+      "category": "nav.breadcrumb a:nth-last-child(2)"
+    }
+  },
+  "pagination": {
+    "type": "url_parameter",
+    "parameter": "page",
+    "max_pages": 15
+  },
+  "date_format": "%Y/%m/%d - %H:%M",
+  "encoding": "utf-8",
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none"
+  },
+  "request_delay": 1.5,
+  "timeout": 25,
+  "retry_attempts": 3,
+  "crawl_settings": {
+    "max_news_per_run": 75,
+    "skip_duplicates": true,
+    "extract_full_text": true,
+    "download_images": false
+  },
+  "url_patterns": {
+    "news_detail": "https://www.mehrnews.com/news/\\d+/.*",
+    "exclude": [
+      ".*\\/tag\\/.*",
+      ".*\\/service\\/.*",
+      ".*\\/photo\\/.*",
+      ".*\\/video\\/.*",
+      ".*\\/archive\\/.*"
+    ]
+  },
+  "content_filters": {
+    "remove_elements": [
+      "script",
+      "style",
+      "nav",
+      "footer",
+      "aside",
+      "header",
+      ".advertisement",
+      ".ads",
+      ".banner",
+      ".social-share",
+      ".related-news",
+      ".comments"
+    ],
+    "clean_text": true,
+    "min_content_length": 150
+  },
+  "persian_date_patterns": [
+    "\\d{4}/\\d{1,2}/\\d{1,2}\\s*-\\s*\\d{1,2}:\\d{2}",
+    "\\d{1,2}\\s+(فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|آذر|دی|بهمن|اسفند)\\s+\\d{4}\\s*-\\s*\\d{1,2}:\\d{2}",
+    "(امروز|دیروز|پریروز)\\s*-\\s*\\d{1,2}:\\d{2}",
+    "\\d{1,2}:\\d{2}\\s*-\\s*\\d{4}/\\d{1,2}/\\d{1,2}"
+  ],
+  "category_mapping": {
+    "سیاست": "politics",
+    "اقتصاد": "economy",
+    "جامعه": "social",
+    "فرهنگ": "culture",
+    "ورزش": "sports",
+    "جهان": "international",
+    "علم": "science",
+    "فناوری": "technology",
+    "استان‌ها": "regional",
+    "دفاع": "defense"
+  },
+  "quality_checks": {
+    "min_title_length": 15,
+    "max_title_length": 250,
+    "min_content_length": 150,
+    "required_fields": ["title", "url"],
+    "validate_url": true,
+    "check_persian_content": true,
+    "blacklist_keywords": [
+      "تست",
+      "آزمایش",
+      "نمونه"
+    ]
+  },
+  "error_handling": {
+    "on_request_error": "retry_then_skip",
+    "on_parse_error": "log_and_continue",
+    "on_validation_error": "skip",
+    "max_consecutive_errors": 3,
+    "backoff_factor": 2
+  },
+  "monitoring": {
+    "log_level": "INFO",
+    "track_performance": true,
+    "alert_on_errors": true,
+    "success_rate_threshold": 0.85,
+    "performance_metrics": [
+      "response_time",
+      "success_rate",
+      "items_per_minute"
+    ]
+  },
+  "advanced_settings": {
+    "use_proxy": false,
+    "proxy_rotation": false,
+    "respect_robots_txt": true,
+    "follow_redirects": true,
+    "max_redirects": 3,
+    "verify_ssl": true
+  },
+  "content_extraction": {
+    "extract_metadata": true,
+    "extract_keywords": true,
+    "detect_language": true,
+    "clean_html": true,
+    "preserve_formatting": false
+  },
+  "scheduling": {
+    "crawl_frequency": "every_30_minutes",
+    "peak_hours": ["08:00-12:00", "14:00-18:00"],
+    "off_peak_delay": 3,
+    "weekend_schedule": "reduced"
+  }
+}
